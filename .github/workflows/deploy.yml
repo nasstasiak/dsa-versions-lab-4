@@ -1,9 +1,11 @@
 name: Deploy and Update HTML
 
 on:
+  push:
+    branches: [ gh-pages ]
   release:
     types: [published]
-  workflow_dispatch:  # Позволяет запускать вручную
+  workflow_dispatch:
 
 permissions:
   contents: write
@@ -21,7 +23,8 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
         with:
-          fetch-depth: 0  # Получаем всю историю для работы с тегами
+          fetch-depth: 0
+          ref: gh-pages
           token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Setup Git
@@ -81,16 +84,17 @@ jobs:
 
       - name: Create version directories
         run: |
-          CURRENT_VERSION="${{ github.event.release.tag_name }}"
-          echo "Создаем директорию для версии: $CURRENT_VERSION"
-          
-          # Создаем версионную папку
-          mkdir -p "$CURRENT_VERSION"
-          
-          # Копируем текущие файлы в версионную папку
-          cp index.html "$CURRENT_VERSION/" || true
-          cp -r ru "$CURRENT_VERSION/" || true
-          cp -r en "$CURRENT_VERSION/" || true
+          # Создаем папки для ВСЕХ версий
+          git fetch --tags
+          for version in $(git tag -l "v*" | sort -V); do
+            echo "Создаем директорию для версии: $version"
+            mkdir -p "$version"
+            
+            # Копируем текущие файлы в версионную папку
+            cp index.html "$version/" || true
+            cp -r ru "$version/" || true
+            cp -r en "$version/" || true
+          done
           
           # Показываем структуру
           echo "=== Структура проекта ==="
@@ -105,12 +109,12 @@ jobs:
           if git diff --staged --quiet; then
             echo "Нет изменений для коммита"
           else
-            git commit -m "Auto-update: Добавлена версия ${{ github.event.release.tag_name }} [skip ci]"
-            git push
+            git commit -m "Auto-update: Обновлены версии [skip ci]"
+            git push origin gh-pages
           fi
 
       - name: Setup Pages
-        uses: actions/configure-pages@v3
+        uses: actions/configure-pages@v4
 
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
@@ -119,8 +123,13 @@ jobs:
 
       - name: Deploy to GitHub Pages
         id: deployment
-        uses: actions/deploy-pages@v3
+        uses: actions/deploy-pages@v4
 
       - name: Show deployment URL
         run: |
           echo "Сайт доступен по адресу: ${{ steps.deployment.outputs.page_url }}"
+          echo "Версии доступны по:"
+          git fetch --tags
+          for version in $(git tag -l "v*" | sort -V); do
+            echo "- ${{ steps.deployment.outputs.page_url }}$version/"
+          done
