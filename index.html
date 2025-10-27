@@ -2,24 +2,117 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <title>Главная страница</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Лабораторная работа №4 - Разработка программных приложений</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            line-height: 1.6;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background-color: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        nav {
+            background-color: #e9ecef;
+            padding: 20px;
+            border-radius: 8px;
+            margin: 20px 0;
+            text-align: center;
+        }
+        .nav-buttons {
+            display: flex;
+            gap: 15px;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+        .nav-btn {
+            display: inline-block;
+            padding: 12px 24px;
+            background-color: #007bff;
+            color: white;
+            text-decoration: none;
+            border-radius: 5px;
+            transition: background-color 0.3s;
+        }
+        .nav-btn:hover {
+            background-color: #0056b3;
+        }
+        h1 {
+            color: #2c3e50;
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        .info-section {
+            margin: 30px 0;
+            padding: 20px;
+            border-left: 4px solid #3498db;
+            background-color: #f8f9fa;
+        }
+        .versions {
+            background: #e8f5e8;
+            padding: 20px;
+            border-radius: 8px;
+            margin: 20px 0;
+            border-left: 4px solid #28a745;
+        }
+        .version-list {
+            list-style-type: none;
+            padding: 0;
+        }
+        .version-list li {
+            margin: 8px 0;
+            padding: 8px;
+            background: white;
+            border-radius: 4px;
+        }
+        .current-version {
+            color: #28a745;
+            font-weight: bold;
+        }
+    </style>
 </head>
 <body>
-    <h1>Главная страница</h1>
-    
-    <h2>Доступные версии:</h2>
-    <nav>
-        <ul>
-            <li><em>Создайте первый релиз чтобы появились версии</em></li>
-        </ul>
-    </nav>
-    
-    <h2>Языки (текущая версия):</h2>
-    <nav>
-        <ul>
-            <li><a href="ru/index.html">Русская версия</a></li>
-            <li><a href="en/index.html">English version</a></li>
-        </ul>
-    </nav>
+    <div class="container">
+        <h1>Лабораторная работа №4</h1>
+        <h2 style="text-align: center; color: #495057;">"Автоматизация публикации web приложения"</h2>
+        
+        <!-- Блок версий будет автоматически обновляться GitHub Actions -->
+        <div class="versions">
+            <h3>📋 Доступные версии сайта:</h3>
+            <ul class="version-list">
+                <li><a href="v1.0.0/ru/index.html" class="current-version">Version 1.0.0 (текущая)</a></li>
+                <!-- GitHub Actions автоматически добавит сюда предыдущие версии -->
+            </ul>
+        </div>
+
+        <nav>
+            <h3>🚀 Быстрый доступ к текущей версии:</h3>
+            <div class="nav-buttons">
+                <a href="ru/index.html" class="nav-btn">🇷🇺 Русская версия (current)</a>
+                <a href="en/index.html" class="nav-btn">🇬🇧 English Version (current)</a>
+            </div>
+        </nav>
+
+        <div class="info-section">
+            <h3>📚 Информация о дисциплине</h3>
+            <p><strong>Дисциплина:</strong> "Разработка программных приложений"</p>
+            <p><strong>Тема:</strong> "Автоматизация публикации web приложения с использованием PaaS GitHub Pages и GitHub Actions"</p>
+            <p><strong>Направление:</strong> 38.03.05 "Бизнес-информатика"</p>
+            <p><strong>Год набора:</strong> 2024</p>
+        </div>
+
+        <footer style="margin-top: 40px; padding-top: 20px; border-top: 1px solid #ddd; text-align: center;">
+            <p><strong>Новосибирский государственный технический университет</strong></p>
+            <p>Факультет бизнеса | Кафедра экономической информатики</p>
+            <p>2024 год</p>
+        </footer>
+    </div>
 </body>
 </html>

@@ -1,71 +1,87 @@
-name: Deploy to GitHub Pages
+name: Deploy to GitHub Pages on Release
 
 on:
-  push:
-    branches: [ gh-pages ]
   release:
     types: [published]
 
-permissions:
-  contents: read
-  pages: write
-  id-token: write
-
 jobs:
-  build:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-
-      - name: Create basic HTML files
-        run: |
-          # СОЗДАЕМ БАЗОВЫЕ ФАЙЛЫ ЕСЛИ ИХ НЕТ
-          if [ ! -f index.html ]; then
-            echo "<html><body><h1>Main Page</h1><a href='ru/index.html'>Russian</a> <a href='en/index.html'>English</a></body></html>" > index.html
-          fi
-          
-          mkdir -p ru
-          if [ ! -f ru/index.html ]; then
-            echo "<html><body><h1>Russian Page</h1><a href='../index.html'>Main</a></body></html>" > ru/index.html
-          fi
-          
-          mkdir -p en
-          if [ ! -f en/index.html ]; then
-            echo "<html><body><h1>English Page</h1><a href='../index.html'>Main</a></body></html>" > en/index.html
-          fi
-
-      - name: Generate versioned sites
-        run: |
-          # Создаем папки для всех версий (тегов)
-          git fetch --tags
-          for tag in $(git tag -l "v*" | sort -V); do
-            echo "Creating version: $tag"
-            mkdir -p "$tag"
-            # Копируем базовые файлы
-            cp -r *.html ru en "$tag/" 2>/dev/null || true
-          done
-          
-          echo "Final structure:"
-          find . -name "*.html" | sort
-
-      - name: Setup Pages
-        uses: actions/configure-pages@v4
-
-      - name: Upload to Pages
-        uses: actions/upload-pages-artifact@v3
-        with:
-          path: .
-
   deploy:
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
-    needs: build
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pages: write
+      id-token: write
+    
     steps:
-      - name: Deploy to GitHub Pages
-        id: deployment
-        uses: actions/deploy-pages@v4
+    - name: Checkout code
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+
+    - name: Get all releases and generate versions page
+      run: |
+        # Получаем список всех релизов
+        releases=$(gh release list --limit 10 --json tagName --jq '.[].tagName')
+        echo "Found releases: $releases"
+        
+        # Генерируем HTML со списком версий
+        VERSIONS_HTML=""
+        for version in $releases; do
+          VERSIONS_HTML+="<li><a href=\"/sites-workers-lab-4/v${version}/\">Version ${version}</a></li>"
+        done
+        
+        # Создаем updated index.html с версиями
+        cat > index_with_versions.html << EOF
+        <!DOCTYPE html>
+        <html lang="ru">
+        <head>
+            <meta charset="UTF-8">
+            <meta name="viewport" content="width=device-width, initial-scale=1.0">
+            <title>Лабораторная работа №4 - Все версии</title>
+            <style>
+                body { font-family: Arial, sans-serif; max-width: 800px; margin: 0 auto; padding: 20px; }
+                .versions { background: #f5f5f5; padding: 20px; border-radius: 8px; margin: 20px 0; }
+                .current-version { color: green; font-weight: bold; }
+            </style>
+        </head>
+        <body>
+            <h1>Лабораторная работа №4</h1>
+            <p>Все доступные версии приложения:</p>
+            
+            <div class="versions">
+                <h3>История версий:</h3>
+                <ul>
+                    $VERSIONS_HTML
+                </ul>
+            </div>
+            
+            <nav>
+                <p>Текущая версия: <span class="current-version">${{ github.event.release.tag_name }}</span></p>
+                <a href="/sites-workers-lab-4/v${{ github.event.release.tag_name }}/ru/index.html">Русская версия (текущая)</a> | 
+                <a href="/sites-workers-lab-4/v${{ github.event.release.tag_name }}/en/index.html">English version (current)</a>
+            </nav>
+        </body>
+        </html>
+        EOF
+
+    - name: Setup GitHub CLI
+      run: |
+        gh auth login --with-token <<< "${{ secrets.GITHUB_TOKEN }}"
+
+    - name: Deploy to versioned directory
+      run: |
+        # Создаем папку для текущей версии
+        mkdir -p "v${{ github.event.release.tag_name }}"
+        
+        # Копируем все файлы в папку версии
+        cp -r *.html ru/ en/ "v${{ github.event.release.tag_name }}/"
+        
+        # Копируем обновленный index.html в корень
+        cp index_with_versions.html index.html
+        
+        # Добавляем, коммитим и пушим изменения
+        git config --local user.email "action@github.com"
+        git config --local user.name "GitHub Action"
+        git add .
+        git commit -m "Deploy version ${{ github.event.release.tag_name }}"
+        git push
