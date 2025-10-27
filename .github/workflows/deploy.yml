@@ -1,16 +1,14 @@
-name: Deploy to GitHub Pages
+name: Deploy and Update HTML
 
 on:
   release:
     types: [published]
+  workflow_dispatch:  # Позволяет запускать вручную
 
 permissions:
+  contents: write
   pages: write
   id-token: write
-
-concurrency:
-  group: "pages"
-  cancel-in-progress: false
 
 jobs:
   deploy:
@@ -18,29 +16,111 @@ jobs:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
     runs-on: ubuntu-latest
+    
     steps:
-      - name: Checkout
+      - name: Checkout repository
         uses: actions/checkout@v4
-        
+        with:
+          fetch-depth: 0  # Получаем всю историю для работы с тегами
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Setup Git
+        run: |
+          git config --global user.name "GitHub Actions"
+          git config --global user.email "actions@github.com"
+
+      - name: Get all version tags
+        id: get_versions
+        run: |
+          # Получаем все теги, начинающиеся с v и сортируем по версии
+          git fetch --tags
+          VERSIONS=$(git tag -l "v*" | sort -V)
+          echo "VERSIONS:"
+          echo "$VERSIONS"
+          
+          # Сохраняем версии в формате для следующих шагов
+          echo "versions_list=$VERSIONS" >> $GITHUB_OUTPUT
+          
+          # Создаем HTML список версий
+          HTML_LIST=""
+          for version in $VERSIONS; do
+            HTML_LIST="$HTML_LIST<li><a href=\"$version/index.html\">$version</a></li>"
+          done
+          echo "html_list=$HTML_LIST" >> $GITHUB_OUTPUT
+          
+          # Для русской и английской версий
+          HTML_LIST_RU=""
+          HTML_LIST_EN=""
+          for version in $VERSIONS; do
+            HTML_LIST_RU="$HTML_LIST_RU<li><a href=\"../$version/ru/index.html\">$version</a></li>"
+            HTML_LIST_EN="$HTML_LIST_EN<li><a href=\"../$version/en/index.html\">$version</a></li>"
+          done
+          echo "html_list_ru=$HTML_LIST_RU" >> $GITHUB_OUTPUT
+          echo "html_list_en=$HTML_LIST_EN" >> $GITHUB_OUTPUT
+
+      - name: Update HTML files with versions
+        run: |
+          # Обновляем главную страницу
+          sed "s|{{VERSIONS_LIST}}|${{ steps.get_versions.outputs.html_list }}|g" templates/main_template.html > index.html
+          
+          # Обновляем русскую версию
+          mkdir -p ru
+          sed "s|{{VERSIONS_LIST}}|${{ steps.get_versions.outputs.html_list_ru }}|g" templates/ru_template.html > ru/index.html
+          
+          # Обновляем английскую версию
+          mkdir -p en
+          sed "s|{{VERSIONS_LIST}}|${{ steps.get_versions.outputs.html_list_en }}|g" templates/en_template.html > en/index.html
+          
+          # Показываем что получилось
+          echo "=== Главная страница ==="
+          head -20 index.html
+          echo "=== Русская версия ==="
+          head -20 ru/index.html
+          echo "=== Английская версия ==="
+          head -20 en/index.html
+
+      - name: Create version directories
+        run: |
+          CURRENT_VERSION="${{ github.event.release.tag_name }}"
+          echo "Создаем директорию для версии: $CURRENT_VERSION"
+          
+          # Создаем версионную папку
+          mkdir -p "$CURRENT_VERSION"
+          
+          # Копируем текущие файлы в версионную папку
+          cp index.html "$CURRENT_VERSION/" || true
+          cp -r ru "$CURRENT_VERSION/" || true
+          cp -r en "$CURRENT_VERSION/" || true
+          
+          # Показываем структуру
+          echo "=== Структура проекта ==="
+          find . -name "*.html" | head -20
+
+      - name: Commit and push changes
+        run: |
+          # Добавляем все изменения
+          git add .
+          
+          # Проверяем есть ли изменения для коммита
+          if git diff --staged --quiet; then
+            echo "Нет изменений для коммита"
+          else
+            git commit -m "Auto-update: Добавлена версия ${{ github.event.release.tag_name }} [skip ci]"
+            git push
+          fi
+
       - name: Setup Pages
         uses: actions/configure-pages@v3
-        
-      - name: Create version directory
-        run: |
-          VERSION="${{ github.event.release.tag_name }}"
-          echo "Creating version: $VERSION"
-          mkdir -p $VERSION
-          cp index.html $VERSION/
-          cp -r ru $VERSION/
-          cp -r en $VERSION/
-          echo "=== Files in $VERSION/ ==="
-          ls -la $VERSION/
-          
+
       - name: Upload artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-pages-artifact@v3
         with:
           path: .
-          
+
       - name: Deploy to GitHub Pages
         id: deployment
-        uses: actions/deploy-pages@v4
+        uses: actions/deploy-pages@v3
+
+      - name: Show deployment URL
+        run: |
+          echo "Сайт доступен по адресу: ${{ steps.deployment.outputs.page_url }}"
