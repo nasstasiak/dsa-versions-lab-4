@@ -9,29 +9,36 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: write
-      pages: write
-      id-token: write
     
     steps:
-    - name: Checkout code
+    - name: Checkout gh-pages
       uses: actions/checkout@v4
       with:
-        fetch-depth: 0
+        ref: gh-pages
+        token: ${{ secrets.GITHUB_TOKEN }}
 
-    - name: Get all releases and generate versions page
+    - name: Get releases and generate versions
       run: |
-        # Получаем список всех релизов
-        releases=$(gh release list --limit 10 --json tagName --jq '.[].tagName')
+        # Получаем список релизов через GitHub API
+        response=$(curl -s -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
+          "https://api.github.com/repos/${{ github.repository }}/releases")
+        releases=$(echo "$response" | grep -o '"tag_name": "[^"]*"' | cut -d'"' -f4 | sort -Vr)
         echo "Found releases: $releases"
         
         # Генерируем HTML со списком версий
         VERSIONS_HTML=""
+        CURRENT_VERSION="${{ github.event.release.tag_name }}"
+        
         for version in $releases; do
-          VERSIONS_HTML+="<li><a href=\"/sites-workers-lab-4/v${version}/\">Version ${version}</a></li>"
+          if [ "$version" = "$CURRENT_VERSION" ]; then
+            VERSIONS_HTML+="<li><strong>🚀 <a href=\"/dsa-versions-lab-4/v${version}/ru/index.html\">Version ${version}</a> (текущая)</strong></li>"
+          else
+            VERSIONS_HTML+="<li>📋 <a href=\"/dsa-versions-lab-4/v${version}/ru/index.html\">Version ${version}</a></li>"
+          fi
         done
         
         # Создаем updated index.html с версиями
-        cat > index_with_versions.html << EOF
+        cat > index_with_versions.html << 'EOF'
         <!DOCTYPE html>
         <html lang="ru">
         <head>
@@ -39,42 +46,103 @@ jobs:
             <meta name="viewport" content="width=device-width, initial-scale=1.0">
             <title>Лабораторная работа №4 - Все версии</title>
             <style>
-                body { font-family: Arial, sans-serif; max-width: 800px; margin: 0 auto; padding: 20px; }
-                .versions { background: #f5f5f5; padding: 20px; border-radius: 8px; margin: 20px 0; }
-                .current-version { color: green; font-weight: bold; }
+                body { 
+                    font-family: Arial, sans-serif; 
+                    max-width: 800px; 
+                    margin: 0 auto; 
+                    padding: 20px; 
+                    line-height: 1.6;
+                    background-color: #f5f5f5;
+                }
+                .container {
+                    background-color: white;
+                    padding: 30px;
+                    border-radius: 10px;
+                    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+                }
+                .versions { 
+                    background: #e8f5e8; 
+                    padding: 20px; 
+                    border-radius: 8px; 
+                    margin: 20px 0; 
+                    border-left: 4px solid #28a745;
+                }
+                .version-list {
+                    list-style-type: none;
+                    padding: 0;
+                }
+                .version-list li {
+                    margin: 10px 0;
+                    padding: 10px;
+                    background: white;
+                    border-radius: 5px;
+                    border-left: 3px solid #007bff;
+                }
+                .current-version { 
+                    color: green; 
+                    font-weight: bold; 
+                }
+                .nav-buttons {
+                    display: flex;
+                    gap: 15px;
+                    justify-content: center;
+                    margin: 20px 0;
+                }
+                .nav-btn {
+                    padding: 10px 20px;
+                    background-color: #007bff;
+                    color: white;
+                    text-decoration: none;
+                    border-radius: 5px;
+                }
+                .nav-btn:hover {
+                    background-color: #0056b3;
+                }
             </style>
         </head>
         <body>
-            <h1>Лабораторная работа №4</h1>
-            <p>Все доступные версии приложения:</p>
-            
-            <div class="versions">
-                <h3>История версий:</h3>
-                <ul>
-                    $VERSIONS_HTML
-                </ul>
+            <div class="container">
+                <h1>Лабораторная работа №4</h1>
+                <p>Все доступные версии приложения:</p>
+                
+                <div class="versions">
+                    <h3>История версий:</h3>
+                    <ul class="version-list">
+        EOF
+                # Вставляем сгенерированные версии
+                echo "$VERSIONS_HTML" >> index_with_versions.html
+                
+                # Завершаем HTML
+                cat >> index_with_versions.html << 'EOF'
+                    </ul>
+                </div>
+                
+                <div class="nav-buttons">
+                    <a href="/dsa-versions-lab-4/v${{ github.event.release.tag_name }}/ru/index.html" class="nav-btn">Русская версия (текущая)</a>
+                    <a href="/dsa-versions-lab-4/v${{ github.event.release.tag_name }}/en/index.html" class="nav-btn">English version (current)</a>
+                </div>
+                
+                <div style="margin-top: 30px; padding: 20px; background: #f8f9fa; border-radius: 8px;">
+                    <h3>Информация о проекте</h3>
+                    <p><strong>Дисциплина:</strong> "Разработка программных приложений"</p>
+                    <p><strong>Направление:</strong> 38.03.05 "Бизнес-информатика"</p>
+                    <p><strong>Год набора:</strong> 2024</p>
+                </div>
             </div>
-            
-            <nav>
-                <p>Текущая версия: <span class="current-version">${{ github.event.release.tag_name }}</span></p>
-                <a href="/sites-workers-lab-4/v${{ github.event.release.tag_name }}/ru/index.html">Русская версия (текущая)</a> | 
-                <a href="/sites-workers-lab-4/v${{ github.event.release.tag_name }}/en/index.html">English version (current)</a>
-            </nav>
         </body>
         </html>
         EOF
 
-    - name: Setup GitHub CLI
-      run: |
-        gh auth login --with-token <<< "${{ secrets.GITHUB_TOKEN }}"
-
-    - name: Deploy to versioned directory
+    - name: Create version directory and deploy
       run: |
         # Создаем папку для текущей версии
         mkdir -p "v${{ github.event.release.tag_name }}"
         
+        # Копируем файлы из основной ветки
+        git checkout ${{ github.sha }} -- *.html ru/ en/ 2>/dev/null || echo "Using available files"
+        
         # Копируем все файлы в папку версии
-        cp -r *.html ru/ en/ "v${{ github.event.release.tag_name }}/"
+        cp -r *.html ru/ en/ "v${{ github.event.release.tag_name }}/" 2>/dev/null || echo "Some files not copied"
         
         # Копируем обновленный index.html в корень
         cp index_with_versions.html index.html
