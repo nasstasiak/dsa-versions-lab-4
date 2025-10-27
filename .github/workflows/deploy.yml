@@ -22,33 +22,22 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-        
+        with:
+          ref: ${{ github.event.release.tag_name }}
+          
       - name: Setup Pages
         uses: actions/configure-pages@v3
         
       - name: Create version directory
         run: |
-          # Получаем версию из названия релиза
           VERSION="${{ github.event.release.tag_name }}"
           echo "Creating version: $VERSION"
-          
-          # Создаем папку для версии
           mkdir -p $VERSION
-          
-          # Копируем файлы в папку версии
           cp index.html $VERSION/
           cp -r ru $VERSION/
           cp -r en $VERSION/
-          
           echo "=== Files in $VERSION/ ==="
           ls -la $VERSION/
-          echo "=== Files in $VERSION/ru/ ==="
-          ls -la $VERSION/ru/
-          echo "=== Files in $VERSION/en/ ==="
-          ls -la $VERSION/en/
-          
-          echo "=== All HTML files ==="
-          find . -name "*.html" | sort
           
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v2
