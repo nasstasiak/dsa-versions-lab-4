@@ -1,0 +1,44 @@
+name: Deploy to GitHub Pages
+
+on:
+  release:
+    types: [published]
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Pages
+        uses: actions/configure-pages@v3
+
+      - name: Create versioned deployment
+        run: |
+          # Получаем название релиза (например v1.0)
+          VERSION_TAG=${GITHUB_REF#refs/tags/}
+          
+          # Создаем папку для версии
+          mkdir -p $VERSION_TAG
+          
+          # Копируем ВСЕ файлы в папку версии
+          cp -r * $VERSION_TAG/ || true
+          cp -r .* $VERSION_TAG/ || true
+          
+          # Очищаем корень от временных файлов
+          rm -rf $VERSION_TAG/$VERSION_TAG
+
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v2
+        with:
+          path: .
+
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v2

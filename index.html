@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <title>Главная страница</title>
+    <script>
+        // Автоматическое определение доступных версий
+        function getAvailableVersions() {
+            // В реальном сценарии здесь был бы запрос к GitHub API
+            // Для лабораторной работы используем статический список
+            return ['v1.0', 'v1.1', 'v1.2'];
+        }
+        
+        function renderNavigation() {
+            const versions = getAvailableVersions();
+            const versionsContainer = document.getElementById('versions-list');
+            const languagesContainer = document.getElementById('languages-list');
+            
+            // Рендерим версии
+            versions.forEach(version => {
+                const li = document.createElement('li');
+                li.innerHTML = `<a href="${version}/">${version}</a>`;
+                versionsContainer.appendChild(li);
+            });
+            
+            // Рендерим языки для текущей версии
+            const languages = [
+                { code: 'ru', name: 'Русская версия' },
+                { code: 'en', name: 'English version' }
+            ];
+            
+            languages.forEach(lang => {
+                const li = document.createElement('li');
+                li.innerHTML = `<a href="${lang.code}/index.html">${lang.name}</a>`;
+                languagesContainer.appendChild(li);
+            });
+        }
+        
+        document.addEventListener('DOMContentLoaded', renderNavigation);
+    </script>
+</head>
+<body>
+    <h1>Главная страница</h1>
+    
+    <h2>Доступные версии:</h2>
+    <nav>
+        <ul id="versions-list">
+            <!-- Версии добавляются автоматически -->
+        </ul>
+    </nav>
+    
+    <h2>Языки (текущая версия):</h2>
+    <nav>
+        <ul id="languages-list">
+            <!-- Языки добавляются автоматически -->
+        </ul>
+    </nav>
+</body>
+</html>
