@@ -20,60 +20,21 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Create basic site structure
+      - name: Create basic HTML files
         run: |
-          # Создаем базовые HTML файлы если их нет
+          # СОЗДАЕМ БАЗОВЫЕ ФАЙЛЫ ЕСЛИ ИХ НЕТ
           if [ ! -f index.html ]; then
-            cat > index.html << EOF
-<!DOCTYPE html>
-<html>
-<head>
-    <title>Main Page</title>
-</head>
-<body>
-    <h1>Welcome to GitHub Pages</h1>
-    <p>This is the main page.</p>
-    <ul>
-        <li><a href="ru/index.html">Russian Version</a></li>
-        <li><a href="en/index.html">English Version</a></li>
-    </ul>
-</body>
-</html>
-EOF
+            echo "<html><body><h1>Main Page</h1><a href='ru/index.html'>Russian</a> <a href='en/index.html'>English</a></body></html>" > index.html
           fi
-
+          
+          mkdir -p ru
           if [ ! -f ru/index.html ]; then
-            mkdir -p ru
-            cat > ru/index.html << EOF
-<!DOCTYPE html>
-<html>
-<head>
-    <title>Russian Version</title>
-</head>
-<body>
-    <h1>Русская версия</h1>
-    <p>Это русская версия сайта.</p>
-    <a href="../index.html">На главную</a>
-</body>
-</html>
-EOF
+            echo "<html><body><h1>Russian Page</h1><a href='../index.html'>Main</a></body></html>" > ru/index.html
           fi
-
+          
+          mkdir -p en
           if [ ! -f en/index.html ]; then
-            mkdir -p en
-            cat > en/index.html << EOF
-<!DOCTYPE html>
-<html>
-<head>
-    <title>English Version</title>
-</head>
-<body>
-    <h1>English Version</h1>
-    <p>This is the English version.</p>
-    <a href="../index.html">Main page</a>
-</body>
-</html>
-EOF
+            echo "<html><body><h1>English Page</h1><a href='../index.html'>Main</a></body></html>" > en/index.html
           fi
 
       - name: Generate versioned sites
@@ -83,16 +44,12 @@ EOF
           for tag in $(git tag -l "v*" | sort -V); do
             echo "Creating version: $tag"
             mkdir -p "$tag"
-            # Копируем базовые файлы в версионную папку
-            cp index.html "$tag/" || true
-            cp -r ru "$tag/" || true
-            cp -r en "$tag/" || true
+            # Копируем базовые файлы
+            cp -r *.html ru en "$tag/" 2>/dev/null || true
           done
           
-          echo "=== Final structure ==="
+          echo "Final structure:"
           find . -name "*.html" | sort
-          echo "=== Files in root ==="
-          ls -la
 
       - name: Setup Pages
         uses: actions/configure-pages@v4
