@@ -3,44 +3,6 @@
 <head>
     <meta charset="UTF-8">
     <title>Главная страница</title>
-    <script>
-        function renderNavigation() {
-            const versionsContainer = document.getElementById('versions-list');
-            const languagesContainer = document.getElementById('languages-list');
-            
-            // Автоматически определяем текущий базовый URL
-            const basePath = window.location.pathname.split('/').slice(0, -1).join('/');
-            const isVersioned = basePath.includes('/v');
-            
-            // Список версий - будет автоматически работать для всех созданных версий
-            const versions = [];
-            for (let i = 1; i <= 10; i++) {
-                versions.push(`v1.${i}`);
-            }
-            
-            // Рендерим версии
-            versions.forEach(version => {
-                const li = document.createElement('li');
-                li.innerHTML = `<a href="${version}/">${version}</a>`;
-                versionsContainer.appendChild(li);
-            });
-            
-            // Рендерим языки
-            const languages = [
-                { code: 'ru', name: 'Русская версия' },
-                { code: 'en', name: 'English version' }
-            ];
-            
-            languages.forEach(lang => {
-                const li = document.createElement('li');
-                const link = isVersioned ? `../${lang.code}/index.html` : `${lang.code}/index.html`;
-                li.innerHTML = `<a href="${link}">${lang.name}</a>`;
-                languagesContainer.appendChild(li);
-            });
-        }
-        
-        document.addEventListener('DOMContentLoaded', renderNavigation);
-    </script>
 </head>
 <body>
     <h1>Главная страница</h1>
@@ -48,15 +10,29 @@
     <h2>Доступные версии:</h2>
     <nav>
         <ul id="versions-list">
-            <!-- Версии добавляются автоматически -->
+            <!-- Версии появятся здесь автоматически после создания релизов -->
         </ul>
+        <p><em>Создайте релиз на GitHub чтобы добавить новую версию</em></p>
     </nav>
     
-    <h2>Языки:</h2>
+    <h2>Языки (текущая версия):</h2>
     <nav>
-        <ul id="languages-list">
-            <!-- Языки добавляются автоматически -->
+        <ul>
+            <li><a href="ru/index.html">Русская версия</a></li>
+            <li><a href="en/index.html">English version</a></li>
         </ul>
     </nav>
+
+    <script>
+        // Простая навигация - версии будут добавляться вручную
+        // или через более сложный скрипт с GitHub API
+        const versionsContainer = document.getElementById('versions-list');
+        
+        // Пока пусто - версии появятся после создания релизов
+        // Можно добавить первую версию вручную:
+        const li = document.createElement('li');
+        li.innerHTML = '<a href="v1.0/">v1.0</a>';
+        versionsContainer.appendChild(li);
+    </script>
 </body>
 </html>

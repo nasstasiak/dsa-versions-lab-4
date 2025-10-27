@@ -3,30 +3,6 @@
 <head>
     <meta charset="UTF-8">
     <title>Русская версия</title>
-    <script>
-        function renderNavigation() {
-            const versionsContainer = document.getElementById('versions-list');
-            
-            // Автоматически определяем текущий путь
-            const basePath = window.location.pathname.split('/').slice(0, -2).join('/');
-            
-            // Все версии, которые будут созданы
-            const versions = [];
-            for (let i = 0; i <= 10; i++) {
-                versions.push(`v1.${i}`);
-            }
-            
-            // Рендерим версии
-            versions.forEach(version => {
-                const li = document.createElement('li');
-                const link = `${basePath}/${version}/ru/index.html`;
-                li.innerHTML = `<a href="${link}">${version}</a>`;
-                versionsContainer.appendChild(li);
-            });
-        }
-        
-        document.addEventListener('DOMContentLoaded', renderNavigation);
-    </script>
 </head>
 <body>
     <h1>Русская версия сайта</h1>
@@ -35,8 +11,9 @@
     <h2>Доступные версии:</h2>
     <nav>
         <ul id="versions-list">
-            <!-- Версии добавляются автоматически -->
+            <!-- Версии появятся автоматически после создания релизов -->
         </ul>
+        <p><em>Создайте релиз на GitHub чтобы добавить новую версию</em></p>
     </nav>
     
     <h2>Навигация:</h2>
@@ -46,5 +23,14 @@
             <li><a href="../en/index.html">Английская версия</a></li>
         </ul>
     </nav>
+
+    <script>
+        // Простая навигация - пока пусто, версии появятся после релизов
+        const versionsContainer = document.getElementById('versions-list');
+        // Можно добавить первую версию вручную после создания релиза:
+        // const li = document.createElement('li');
+        // li.innerHTML = '<a href="../v1.0/ru/index.html">v1.0</a>';
+        // versionsContainer.appendChild(li);
+    </script>
 </body>
 </html>

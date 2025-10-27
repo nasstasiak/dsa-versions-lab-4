@@ -3,30 +3,6 @@
 <head>
     <meta charset="UTF-8">
     <title>English Version</title>
-    <script>
-        function renderNavigation() {
-            const versionsContainer = document.getElementById('versions-list');
-            
-            // Автоматически определяем текущий путь
-            const basePath = window.location.pathname.split('/').slice(0, -2).join('/');
-            
-            // Все версии, которые будут созданы
-            const versions = [];
-            for (let i = 0; i <= 10; i++) {
-                versions.push(`v1.${i}`);
-            }
-            
-            // Рендерим версии
-            versions.forEach(version => {
-                const li = document.createElement('li');
-                const link = `${basePath}/${version}/en/index.html`;
-                li.innerHTML = `<a href="${link}">${version}</a>`;
-                versionsContainer.appendChild(li);
-            });
-        }
-        
-        document.addEventListener('DOMContentLoaded', renderNavigation);
-    </script>
 </head>
 <body>
     <h1>English Version</h1>
@@ -35,8 +11,9 @@
     <h2>Available versions:</h2>
     <nav>
         <ul id="versions-list">
-            <!-- Versions added automatically -->
+            <!-- Versions will appear automatically after creating releases -->
         </ul>
+        <p><em>Create a release on GitHub to add a new version</em></p>
     </nav>
     
     <h2>Navigation:</h2>
@@ -46,5 +23,14 @@
             <li><a href="../ru/index.html">Russian version</a></li>
         </ul>
     </nav>
+
+    <script>
+        // Simple navigation - empty for now, versions will appear after releases
+        const versionsContainer = document.getElementById('versions-list');
+        // You can add the first version manually after creating a release:
+        // const li = document.createElement('li');
+        // li.innerHTML = '<a href="../v1.0/en/index.html">v1.0</a>';
+        // versionsContainer.appendChild(li);
+    </script>
 </body>
 </html>
