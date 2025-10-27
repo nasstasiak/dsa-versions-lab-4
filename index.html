@@ -4,17 +4,19 @@
     <meta charset="UTF-8">
     <title>Главная страница</title>
     <script>
-        // Автоматическое определение доступных версий
-        function getAvailableVersions() {
-            // В реальном сценарии здесь был бы запрос к GitHub API
-            // Для лабораторной работы используем статический список
-            return ['v1.0', 'v1.1', 'v1.2'];
-        }
-        
         function renderNavigation() {
-            const versions = getAvailableVersions();
             const versionsContainer = document.getElementById('versions-list');
             const languagesContainer = document.getElementById('languages-list');
+            
+            // Автоматически определяем текущий базовый URL
+            const basePath = window.location.pathname.split('/').slice(0, -1).join('/');
+            const isVersioned = basePath.includes('/v');
+            
+            // Список версий - будет автоматически работать для всех созданных версий
+            const versions = [];
+            for (let i = 1; i <= 10; i++) {
+                versions.push(`v1.${i}`);
+            }
             
             // Рендерим версии
             versions.forEach(version => {
@@ -23,7 +25,7 @@
                 versionsContainer.appendChild(li);
             });
             
-            // Рендерим языки для текущей версии
+            // Рендерим языки
             const languages = [
                 { code: 'ru', name: 'Русская версия' },
                 { code: 'en', name: 'English version' }
@@ -31,7 +33,8 @@
             
             languages.forEach(lang => {
                 const li = document.createElement('li');
-                li.innerHTML = `<a href="${lang.code}/index.html">${lang.name}</a>`;
+                const link = isVersioned ? `../${lang.code}/index.html` : `${lang.code}/index.html`;
+                li.innerHTML = `<a href="${link}">${lang.name}</a>`;
                 languagesContainer.appendChild(li);
             });
         }
@@ -49,7 +52,7 @@
         </ul>
     </nav>
     
-    <h2>Языки (текущая версия):</h2>
+    <h2>Языки:</h2>
     <nav>
         <ul id="languages-list">
             <!-- Языки добавляются автоматически -->

@@ -4,18 +4,24 @@
     <meta charset="UTF-8">
     <title>Русская версия</title>
     <script>
-        function getAvailableVersions() {
-            return ['v1.0', 'v1.1', 'v1.2'];
-        }
-        
         function renderNavigation() {
-            const versions = getAvailableVersions();
-            const container = document.getElementById('versions-list');
+            const versionsContainer = document.getElementById('versions-list');
             
+            // Автоматически определяем текущий путь
+            const basePath = window.location.pathname.split('/').slice(0, -2).join('/');
+            
+            // Все версии, которые будут созданы
+            const versions = [];
+            for (let i = 0; i <= 10; i++) {
+                versions.push(`v1.${i}`);
+            }
+            
+            // Рендерим версии
             versions.forEach(version => {
                 const li = document.createElement('li');
-                li.innerHTML = `<a href="../${version}/ru/index.html">${version}</a>`;
-                container.appendChild(li);
+                const link = `${basePath}/${version}/ru/index.html`;
+                li.innerHTML = `<a href="${link}">${version}</a>`;
+                versionsContainer.appendChild(li);
             });
         }
         
