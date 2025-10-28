@@ -25,9 +25,13 @@ jobs:
     - name: Create version directory
       run: |
         VERSION="${{ github.event.release.tag_name }}"
+        # Гарантируем что версия начинается с 'v'
+        if [[ ! $VERSION =~ ^v ]]; then
+          VERSION="v$VERSION"
+        fi
         echo "Creating version: $VERSION"
         
-        # Создаем папку для версии (сохраняем 'v' в названии)
+        # Создаем папку для версии
         mkdir -p "$VERSION"
         
         # Копируем файлы из ОСНОВНОЙ ветки
@@ -38,6 +42,10 @@ jobs:
     - name: Update current version
       run: |
         VERSION="${{ github.event.release.tag_name }}"
+        # Гарантируем что версия начинается с 'v'
+        if [[ ! $VERSION =~ ^v ]]; then
+          VERSION="v$VERSION"
+        fi
         
         # Очищаем корень и копируем самую новую версию
         rm -rf *.html ru/ en/ 2>/dev/null || true
@@ -54,6 +62,10 @@ jobs:
         
         VERSIONS_HTML=""
         CURRENT_VERSION="${{ github.event.release.tag_name }}"
+        # Гарантируем что текущая версия начинается с 'v'
+        if [[ ! $CURRENT_VERSION =~ ^v ]]; then
+          CURRENT_VERSION="v$CURRENT_VERSION"
+        fi
         
         for version_dir in $VERSION_DIRS; do
           # Пропускаем пустые или некорректные версии
