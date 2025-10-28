@@ -25,32 +25,44 @@ jobs:
     - name: Create version directory
       run: |
         VERSION="${{ github.event.release.tag_name }}"
-        CLEAN_VERSION="${VERSION#v}"
-        echo "Creating version: v$CLEAN_VERSION"
+        echo "Creating version: $VERSION"
         
-        mkdir -p "v$CLEAN_VERSION"
-        cp -r *.html ru/ en/ "v$CLEAN_VERSION/" 2>/dev/null || echo "Files copied"
+        # Создаем папку для версии (сохраняем 'v' в названии)
+        mkdir -p "$VERSION"
+        
+        # Копируем файлы из ОСНОВНОЙ ветки
+        git checkout ${{ github.sha }} -- *.html ru/ en/
+        cp -r *.html ru/ en/ "$VERSION/"
+        echo "Files copied to $VERSION"
 
     - name: Update current version
       run: |
         VERSION="${{ github.event.release.tag_name }}"
-        CLEAN_VERSION="${VERSION#v}"
         
+        # Очищаем корень и копируем самую новую версию
         rm -rf *.html ru/ en/ 2>/dev/null || true
-        cp -r "v$CLEAN_VERSION"/* ./ 2>/dev/null || true
+        cp -r "$VERSION"/* ./
+        cp -r "$VERSION"/ru ./
+        cp -r "$VERSION"/en ./
+        echo "Current version updated to $VERSION"
 
     - name: Generate versions list
       run: |
-        VERSION_DIRS=$(find . -maxdepth 1 -type d -name 'v*' | grep -o 'v[0-9.]*' | sort -Vr)
+        # Ищем только папки версий с паттерном vX.X.X (игнорируем пустые)
+        VERSION_DIRS=$(find . -maxdepth 1 -type d -name 'v[0-9]*' | grep -o 'v[0-9][^/]*' | sort -Vr)
         echo "Found versions: $VERSION_DIRS"
         
         VERSIONS_HTML=""
-        CURRENT_VERSION="v${GITHUB_REF#refs/tags/}"
-        CLEAN_CURRENT="${CURRENT_VERSION#v}"
+        CURRENT_VERSION="${{ github.event.release.tag_name }}"
         
         for version_dir in $VERSION_DIRS; do
+          # Пропускаем пустые или некорректные версии
+          if [ -z "$version_dir" ] || [ "$version_dir" = "v" ]; then
+            continue
+          fi
+          
           VERSION_NUMBER="${version_dir#v}"
-          if [ "$version_dir" = "v$CLEAN_CURRENT" ]; then
+          if [ "$version_dir" = "$CURRENT_VERSION" ]; then
             VERSIONS_HTML+="<div class='version current'><strong>🚀 Version ${VERSION_NUMBER} (текущая)</strong><br>"
             VERSIONS_HTML+="<a href='/dsa-versions-lab-4/${version_dir}/ru/index.html'>Русская версия</a> | "
             VERSIONS_HTML+="<a href='/dsa-versions-lab-4/${version_dir}/en/index.html'>English version</a></div>"
@@ -133,7 +145,6 @@ jobs:
                     <h3>Информация о проекте</h3>
                     <p><strong>Дисциплина:</strong> "Разработка программных приложений"</p>
                     <p><strong>Направление:</strong> 38.03.05 "Бизнес-информатика"</p>
-                    <p><strong>Год набора:</strong> 2024</p>
                 </div>
             </div>
         </body>
@@ -142,18 +153,43 @@ jobs:
 
     - name: Fix navigation links
       run: |
-        # Fix Russian version
+        # Обновляем навигацию во всех версиях
+        for version_dir in v*/; do
+          if [ -d "$version_dir" ] && [ "$version_dir" != "v/" ]; then
+            # Русская версия
+            if [ -f "${version_dir}ru/index.html" ]; then
+              sed -i 's|href="../../index.html"|href="/dsa-versions-lab-4/index.html"|g' "${version_dir}ru/index.html"
+              sed -i 's|href="../../ru/index.html"|href="/dsa-versions-lab-4/ru/index.html"|g' "${version_dir}ru/index.html"
+              sed -i 's|href="../../en/index.html"|href="/dsa-versions-lab-4/en/index.html"|g' "${version_dir}ru/index.html"
+            fi
+            # Английская версия
+            if [ -f "${version_dir}en/index.html" ]; then
+              sed -i 's|href="../../index.html"|href="/dsa-versions-lab-4/index.html"|g' "${version_dir}en/index.html"
+              sed -i 's|href="../../ru/index.html"|href="/dsa-versions-lab-4/ru/index.html"|g' "${version_dir}en/index.html"
+              sed -i 's|href="../../en/index.html"|href="/dsa-versions-lab-4/en/index.html"|g' "${version_dir}en/index.html"
+            fi
+          fi
+        done
+        
+        # Также обновляем навигацию в корневой версии
         if [ -f "ru/index.html" ]; then
           sed -i 's|href="../../index.html"|href="/dsa-versions-lab-4/index.html"|g' ru/index.html
           sed -i 's|href="../../ru/index.html"|href="/dsa-versions-lab-4/ru/index.html"|g' ru/index.html
           sed -i 's|href="../../en/index.html"|href="/dsa-versions-lab-4/en/index.html"|g' ru/index.html
         fi
         
-        # Fix English version  
         if [ -f "en/index.html" ]; then
           sed -i 's|href="../../index.html"|href="/dsa-versions-lab-4/index.html"|g' en/index.html
           sed -i 's|href="../../ru/index.html"|href="/dsa-versions-lab-4/ru/index.html"|g' en/index.html
           sed -i 's|href="../../en/index.html"|href="/dsa-versions-lab-4/en/index.html"|g' en/index.html
+        fi
+
+    - name: Clean up empty version folders
+      run: |
+        # Удаляем пустые или некорректные папки версий
+        if [ -d "v" ] && [ ! -d "v/"* ] 2>/dev/null; then
+          rm -rf "v"
+          echo "Removed empty version folder 'v'"
         fi
 
     - name: Commit and push
