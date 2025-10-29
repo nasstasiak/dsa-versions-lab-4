@@ -32,10 +32,10 @@ jobs:
         
         # Создаем папку для версии и копируем файлы
         mkdir -p "$VERSION"
-        cp -r *.html ru/ en/ "$VERSION/" || true
+        cp -r *.html ru/ en/ style.css "$VERSION/" || true
         
         # Обновляем текущую версию в корне
-        rm -rf *.html ru en 2>/dev/null || true
+        rm -rf *.html ru en style.css 2>/dev/null || true
         cp -r "$VERSION"/* ./
 
     - name: Generate versions page
@@ -47,6 +47,7 @@ jobs:
         <head>
             <meta charset="UTF-8">
             <title>Лабораторная работа №4 - Все версии</title>
+            <link rel="stylesheet" href="style.css">
         </head>
         <body>
             <h1>Лабораторная работа №4</h1>
