@@ -11,7 +11,7 @@ jobs:
       contents: write
     
     steps:
-    - name: Checkout main branch
+    - name: Checkout code
       uses: actions/checkout@v4
       with:
         token: ${{ secrets.GITHUB_TOKEN }}
@@ -22,189 +22,64 @@ jobs:
         git checkout gh-pages
         git pull origin gh-pages
 
-    - name: Create version directory
+    - name: Prepare version files
       run: |
+        # Получаем версию релиза
         VERSION="${{ github.event.release.tag_name }}"
-        # Гарантируем что версия начинается с 'v'
         if [[ ! $VERSION =~ ^v ]]; then
           VERSION="v$VERSION"
         fi
-        echo "Creating version: $VERSION"
         
-        # Создаем папку для версии
+        # Создаем папку для версии и копируем файлы
         mkdir -p "$VERSION"
+        cp -r *.html ru/ en/ "$VERSION/" || true
         
-        # Копируем файлы из ОСНОВНОЙ ветки
-        git checkout ${{ github.sha }} -- *.html ru/ en/
-        cp -r *.html ru/ en/ "$VERSION/"
-        echo "Files copied to $VERSION"
-
-    - name: Update current version
-      run: |
-        VERSION="${{ github.event.release.tag_name }}"
-        # Гарантируем что версия начинается с 'v'
-        if [[ ! $VERSION =~ ^v ]]; then
-          VERSION="v$VERSION"
-        fi
-        
-        # Очищаем корень и копируем самую новую версию
-        rm -rf *.html ru/ en/ 2>/dev/null || true
+        # Обновляем текущую версию в корне
+        rm -rf *.html ru en 2>/dev/null || true
         cp -r "$VERSION"/* ./
-        cp -r "$VERSION"/ru ./
-        cp -r "$VERSION"/en ./
-        echo "Current version updated to $VERSION"
 
-    - name: Generate versions list
+    - name: Generate versions page
       run: |
-        # Ищем только папки версий с паттерном vX.X.X (игнорируем пустые)
-        VERSION_DIRS=$(find . -maxdepth 1 -type d -name 'v[0-9]*' | grep -o 'v[0-9][^/]*' | sort -Vr)
-        echo "Found versions: $VERSION_DIRS"
-        
-        VERSIONS_HTML=""
-        CURRENT_VERSION="${{ github.event.release.tag_name }}"
-        # Гарантируем что текущая версия начинается с 'v'
-        if [[ ! $CURRENT_VERSION =~ ^v ]]; then
-          CURRENT_VERSION="v$CURRENT_VERSION"
-        fi
-        
-        for version_dir in $VERSION_DIRS; do
-          # Пропускаем пустые или некорректные версии
-          if [ -z "$version_dir" ] || [ "$version_dir" = "v" ]; then
-            continue
-          fi
-          
-          VERSION_NUMBER="${version_dir#v}"
-          if [ "$version_dir" = "$CURRENT_VERSION" ]; then
-            VERSIONS_HTML+="<div class='version current'><strong>🚀 Version ${VERSION_NUMBER} (текущая)</strong><br>"
-            VERSIONS_HTML+="<a href='/dsa-versions-lab-4/${version_dir}/ru/index.html'>Русская версия</a> | "
-            VERSIONS_HTML+="<a href='/dsa-versions-lab-4/${version_dir}/en/index.html'>English version</a></div>"
-          else
-            VERSIONS_HTML+="<div class='version'>📋 Version ${VERSION_NUMBER}<br>"
-            VERSIONS_HTML+="<a href='/dsa-versions-lab-4/${version_dir}/ru/index.html'>Русская версия</a> | "
-            VERSIONS_HTML+="<a href='/dsa-versions-lab-4/${version_dir}/en/index.html'>English version</a></div>"
-          fi
-        done
-        
+        # Создаем HTML страницу со списком версий
         cat > index.html << 'EOF'
         <!DOCTYPE html>
-        <html lang="ru">
+        <html>
         <head>
             <meta charset="UTF-8">
-            <meta name="viewport" content="width=device-width, initial-scale=1.0">
             <title>Лабораторная работа №4 - Все версии</title>
-            <style>
-                body { 
-                    font-family: Arial, sans-serif; 
-                    max-width: 800px; 
-                    margin: 0 auto; 
-                    padding: 20px; 
-                    line-height: 1.6;
-                    background-color: #f5f5f5;
-                }
-                .container {
-                    background-color: white;
-                    padding: 30px;
-                    border-radius: 10px;
-                    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-                }
-                .version {
-                    background: #f8f9fa;
-                    padding: 15px;
-                    margin: 15px 0;
-                    border-radius: 8px;
-                    border-left: 4px solid #007bff;
-                }
-                .version.current {
-                    background: #e8f5e8;
-                    border-left: 4px solid #28a745;
-                }
-                .nav-buttons {
-                    display: flex;
-                    gap: 15px;
-                    justify-content: center;
-                    margin: 25px 0;
-                }
-                .nav-btn {
-                    padding: 12px 24px;
-                    background-color: #007bff;
-                    color: white;
-                    text-decoration: none;
-                    border-radius: 6px;
-                    font-weight: bold;
-                }
-                .nav-btn:hover {
-                    background-color: #0056b3;
-                }
-            </style>
         </head>
         <body>
-            <div class="container">
-                <h1>Лабораторная работа №4</h1>
-                <h2>Автоматизация публикации web приложения</h2>
-                
-                <div class="nav-buttons">
-                    <a href="/dsa-versions-lab-4/ru/index.html" class="nav-btn">🇷🇺 Текущая русская версия</a>
-                    <a href="/dsa-versions-lab-4/en/index.html" class="nav-btn">🇬🇧 Current English version</a>
-                </div>
-
-                <h3>📚 Все доступные версии:</h3>
-        EOF
-
-                echo "$VERSIONS_HTML" >> index.html
-                
-                cat >> index.html << 'EOF'
-                <div style="margin-top: 30px; padding: 20px; background: #fff3cd; border-radius: 8px;">
-                    <h3>Информация о проекте</h3>
-                    <p><strong>Дисциплина:</strong> "Разработка программных приложений"</p>
-                    <p><strong>Направление:</strong> 38.03.05 "Бизнес-информатика"</p>
-                </div>
+            <h1>Лабораторная работа №4</h1>
+            
+            <div>
+                <a href="./ru/index.html">Русская версия</a>
+                <a href="./en/index.html">English version</a>
             </div>
-        </body>
-        </html>
+
+            <h3>Все версии:</h3>
         EOF
 
-    - name: Fix navigation links
-      run: |
-        # Обновляем навигацию во всех версиях
-        for version_dir in v*/; do
-          if [ -d "$version_dir" ] && [ "$version_dir" != "v/" ]; then
-            # Русская версия
-            if [ -f "${version_dir}ru/index.html" ]; then
-              sed -i 's|href="../../index.html"|href="/dsa-versions-lab-4/index.html"|g' "${version_dir}ru/index.html"
-              sed -i 's|href="../../ru/index.html"|href="/dsa-versions-lab-4/ru/index.html"|g' "${version_dir}ru/index.html"
-              sed -i 's|href="../../en/index.html"|href="/dsa-versions-lab-4/en/index.html"|g' "${version_dir}ru/index.html"
+        # Добавляем список версий
+        for dir in v*/; do
+          if [ -d "$dir" ]; then
+            version="${dir%/}"
+            version_num="${version#v}"
+            
+            if [ "$version" = "$VERSION" ]; then
+              echo "<div><strong>Version $version_num (текущая)</strong><br>" >> index.html
+            else
+              echo "<div>Version $version_num<br>" >> index.html
             fi
-            # Английская версия
-            if [ -f "${version_dir}en/index.html" ]; then
-              sed -i 's|href="../../index.html"|href="/dsa-versions-lab-4/index.html"|g' "${version_dir}en/index.html"
-              sed -i 's|href="../../ru/index.html"|href="/dsa-versions-lab-4/ru/index.html"|g' "${version_dir}en/index.html"
-              sed -i 's|href="../../en/index.html"|href="/dsa-versions-lab-4/en/index.html"|g' "${version_dir}en/index.html"
-            fi
+            
+            echo "<a href='./$version/ru/index.html'>Русская</a> | " >> index.html
+            echo "<a href='./$version/en/index.html'>English</a></div>" >> index.html
           fi
         done
-        
-        # Также обновляем навигацию в корневой версии
-        if [ -f "ru/index.html" ]; then
-          sed -i 's|href="../../index.html"|href="/dsa-versions-lab-4/index.html"|g' ru/index.html
-          sed -i 's|href="../../ru/index.html"|href="/dsa-versions-lab-4/ru/index.html"|g' ru/index.html
-          sed -i 's|href="../../en/index.html"|href="/dsa-versions-lab-4/en/index.html"|g' ru/index.html
-        fi
-        
-        if [ -f "en/index.html" ]; then
-          sed -i 's|href="../../index.html"|href="/dsa-versions-lab-4/index.html"|g' en/index.html
-          sed -i 's|href="../../ru/index.html"|href="/dsa-versions-lab-4/ru/index.html"|g' en/index.html
-          sed -i 's|href="../../en/index.html"|href="/dsa-versions-lab-4/en/index.html"|g' en/index.html
-        fi
 
-    - name: Clean up empty version folders
-      run: |
-        # Удаляем пустые или некорректные папки версий
-        if [ -d "v" ] && [ ! -d "v/"* ] 2>/dev/null; then
-          rm -rf "v"
-          echo "Removed empty version folder 'v'"
-        fi
+        # Закрываем HTML
+        echo "</body></html>" >> index.html
 
-    - name: Commit and push
+    - name: Commit and deploy
       run: |
         git config user.name "GitHub Actions"
         git config user.email "actions@github.com"
